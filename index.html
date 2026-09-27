@@ -2,77 +2,126 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b1f4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Колесо Арсения</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
 <style>
-  :root { --bg1:#1b1f4b; --bg2:#3a1c71; --gold:#ffd166; }
-  * { box-sizing: border-box; }
+  :root { --bg1:#1b1f4b; --bg2:#3a1c71; --gold:#ffd166; --gold2:#ffb703; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; }
   body {
-    margin:0; min-height:100vh; font-family:'Nunito',sans-serif; color:#fff;
-    background: radial-gradient(circle at 50% 30%, var(--bg2), var(--bg1) 70%);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
-    overflow:hidden; user-select:none;
+    margin:0; font-family:'Nunito',sans-serif; color:#fff;
+    background: radial-gradient(circle at 50% 25%, var(--bg2), var(--bg1) 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    overflow:hidden; user-select:none; -webkit-user-select:none; padding:12px 16px;
+    padding-top:max(12px, env(safe-area-inset-top)); padding-bottom:max(12px, env(safe-area-inset-bottom));
   }
-  h1 { margin:0; font-weight:900; font-size:clamp(26px,5vw,44px); letter-spacing:.5px;
-       text-shadow:0 4px 18px rgba(0,0,0,.4); }
+  /* мерцающие звёзды на фоне */
+  .stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+  .star { position:absolute; width:4px; height:4px; border-radius:50%; background:#fff; opacity:0;
+          animation: twinkle var(--d,3s) ease-in-out var(--delay,0s) infinite; }
+  @keyframes twinkle { 0%,100%{opacity:0; transform:scale(.5)} 50%{opacity:.9; transform:scale(1.3)} }
+
+  header { text-align:center; z-index:1; }
+  h1 { margin:0; font-weight:900; font-size:clamp(26px,6vw,46px); letter-spacing:.5px; text-shadow:0 4px 18px rgba(0,0,0,.45); }
   h1 span { color:var(--gold); }
-  .stage { position:relative; width:min(88vw, 78vh); aspect-ratio:1; }
-  canvas { width:100%; height:100%; display:block; border-radius:50%;
-           box-shadow:0 0 0 12px rgba(255,255,255,.08), 0 0 0 22px rgba(255,255,255,.04), 0 30px 60px rgba(0,0,0,.5); }
+  .tagline { margin:4px 0 0; font-weight:700; opacity:.8; font-size:clamp(14px,3vw,18px); }
+
+  .stage { position:relative; width:min(90vw, 60vh); aspect-ratio:1; z-index:1; cursor:pointer; margin-top:26px; }
+  canvas#wheel { width:100%; height:100%; display:block; border-radius:50%;
+    box-shadow:0 0 0 12px rgba(255,255,255,.08), 0 0 0 22px rgba(255,255,255,.04), 0 30px 60px rgba(0,0,0,.5), 0 0 60px rgba(255,209,102,.15);
+    animation: glow 3s ease-in-out infinite; }
+  @keyframes glow { 0%,100%{ filter:brightness(1) } 50%{ filter:brightness(1.08) } }
+  .stage.spinning canvas#wheel { animation:none; }
+
   .pointer {
-    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
-    width:0; height:0; border-left:22px solid transparent; border-right:22px solid transparent;
-    border-top:52px solid var(--gold); filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); z-index:3;
+    position:absolute; top:-24px; left:50%; width:0; height:0; z-index:3;
+    border-left:24px solid transparent; border-right:24px solid transparent; border-top:56px solid var(--gold);
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.5));
+    transform:translateX(-50%) rotate(0deg); transform-origin:50% 20%; transition:transform .09s ease-out;
   }
+  .pointer.tick { transform:translateX(-50%) rotate(-22deg); transition:transform .04s ease-in; }
+
   .hub {
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:18%; height:18%; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fff,#ffd166 60%,#e0a800);
+    width:20%; height:20%; border-radius:50%;
+    background:radial-gradient(circle at 35% 35%,#fff,#ffd166 55%,#e0a800);
     box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 -4px 10px rgba(0,0,0,.2);
-    display:flex; align-items:center; justify-content:center; font-size:clamp(28px,6vw,64px); z-index:2;
+    display:flex; align-items:center; justify-content:center; font-size:clamp(30px,7vw,70px); z-index:2;
+    transition:transform .15s;
   }
-  button.spin {
-    font-family:inherit; font-weight:900; font-size:clamp(20px,3.5vw,30px); padding:16px 54px; border:0; border-radius:999px;
-    color:#3a1c71; background:linear-gradient(180deg,#ffe28a,#ffb703); cursor:pointer;
-    box-shadow:0 10px 0 #c98a00, 0 18px 30px rgba(0,0,0,.4); transition:transform .1s, box-shadow .1s;
-  }
-  button.spin:active { transform:translateY(6px); box-shadow:0 4px 0 #c98a00, 0 8px 16px rgba(0,0,0,.4); }
-  button.spin:disabled { opacity:.6; cursor:default; }
+  .stage:active .hub { transform:translate(-50%,-50%) scale(.92); }
 
-  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; }
+  button.spin {
+    z-index:1; font-family:inherit; font-weight:900; font-size:clamp(22px,4vw,32px); padding:16px 58px; border:0; border-radius:999px;
+    color:#3a1c71; background:linear-gradient(180deg,#ffe28a,var(--gold2)); cursor:pointer;
+    box-shadow:0 10px 0 #c98a00, 0 18px 30px rgba(0,0,0,.4); transition:transform .1s, box-shadow .1s;
+    animation: bounce 1.6s ease-in-out infinite;
+  }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  button.spin:active { transform:translateY(6px)!important; box-shadow:0 4px 0 #c98a00, 0 8px 16px rgba(0,0,0,.4); animation:none; }
+  button.spin:disabled { opacity:.55; cursor:default; animation:none; }
+
+  .sound { position:fixed; top:max(12px, env(safe-area-inset-top)); right:14px; z-index:5; width:46px; height:46px; border-radius:50%; border:0;
+           background:rgba(255,255,255,.12); color:#fff; font-size:22px; cursor:pointer; backdrop-filter:blur(6px); }
+
+  /* результат */
+  .overlay { position:fixed; inset:0; background:rgba(10,8,30,.7); display:none; align-items:center; justify-content:center; z-index:10; backdrop-filter:blur(3px); }
   .overlay.show { display:flex; }
   .card {
-    background:#fff; color:#222; border-radius:32px; padding:36px 48px; text-align:center;
-    box-shadow:0 30px 80px rgba(0,0,0,.6); animation:pop .5s cubic-bezier(.2,1.6,.4,1);
-    max-width:90vw;
+    --c:#ff595e; color:#fff; border-radius:36px; padding:34px 40px 30px; text-align:center; width:min(92vw,440px);
+    background:linear-gradient(160deg, var(--c), color-mix(in srgb, var(--c) 55%, #1b1f4b));
+    box-shadow:0 30px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.35);
+    animation:pop .55s cubic-bezier(.2,1.6,.4,1);
   }
-  .card .emoji { font-size:clamp(80px,18vw,150px); line-height:1; }
-  .card .title { font-size:clamp(28px,6vw,48px); font-weight:900; margin-top:8px; }
-  .card .sub { color:#666; font-size:18px; margin-top:6px; }
-  .card button { margin-top:22px; font-family:inherit; font-weight:900; font-size:20px; padding:12px 36px; border:0; border-radius:999px;
-                 background:#3a1c71; color:#fff; cursor:pointer; }
+  .card .lead { font-weight:700; opacity:.85; font-size:18px; letter-spacing:.5px; text-transform:uppercase; }
+  .card .emoji { font-size:clamp(90px,22vw,160px); line-height:1.15; animation:jump .8s cubic-bezier(.3,1.5,.5,1) .15s both; filter:drop-shadow(0 12px 18px rgba(0,0,0,.35)); }
+  .card .title { font-size:clamp(30px,7vw,50px); font-weight:900; margin-top:4px; text-shadow:0 3px 10px rgba(0,0,0,.3); }
+  .card .sub { opacity:.9; font-size:20px; font-weight:700; margin-top:6px; }
+  .card .btns { display:flex; gap:12px; justify-content:center; margin-top:24px; flex-wrap:wrap; }
+  .card button { font-family:inherit; font-weight:900; font-size:19px; padding:13px 28px; border:0; border-radius:999px; cursor:pointer; }
+  .card .ok { background:#fff; color:#3a1c71; }
+  .card .more { background:rgba(255,255,255,.2); color:#fff; }
   @keyframes pop { from { transform:scale(.4); opacity:0 } to { transform:scale(1); opacity:1 } }
+  @keyframes jump { 0%{transform:scale(0) rotate(-30deg)} 60%{transform:scale(1.25) rotate(8deg)} 100%{transform:scale(1) rotate(0)} }
+
+  canvas#confetti { position:fixed; inset:0; width:100%; height:100%; pointer-events:none; z-index:11; }
 </style>
 </head>
 <body>
-  <h1>🎡 Колесо <span>Арсения</span></h1>
-  <div class="stage">
-    <div class="pointer"></div>
+  <div class="stars" id="stars"></div>
+  <button class="sound" id="sound" title="Звук">🔊</button>
+
+  <header>
+    <h1>🎡 Колесо <span>Арсения</span></h1>
+    <p class="tagline">Крути и узнай, что тебя ждёт!</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <div class="pointer" id="pointer"></div>
     <canvas id="wheel" width="1000" height="1000"></canvas>
     <div class="hub">⭐</div>
   </div>
   <button class="spin" id="spin">Крутить!</button>
 
   <div class="overlay" id="overlay">
-    <div class="card">
+    <div class="card" id="card">
+      <div class="lead">Тебе выпало</div>
       <div class="emoji" id="rEmoji"></div>
       <div class="title" id="rTitle"></div>
       <div class="sub" id="rSub"></div>
-      <button id="again">Ещё раз</button>
+      <div class="btns">
+        <button class="ok" id="ok">Отлично! 👍</button>
+        <button class="more" id="again">Крутить ещё</button>
+      </div>
     </div>
   </div>
+  <canvas id="confetti"></canvas>
 
 <script>
+// ---------- секторы (weight — шанс, по умолчанию 1) ----------
 const ITEMS = [
   { name:'Математика',      emoji:'🧮', color:'#ff595e', sub:'Считаем и решаем!' },
   { name:'Русский',         emoji:'✍️', color:'#ff924c', sub:'Пишем красиво' },
@@ -85,14 +134,39 @@ const ITEMS = [
   { name:'Телевизор',       emoji:'📺', color:'#b5179e', sub:'Смотрим мультик' },
   { name:'Порисовать',      emoji:'🎨', color:'#f72585', sub:'Творим!' },
   { name:'Погулять',        emoji:'🌳', color:'#06d6a0', sub:'На улицу!' },
-  { name:'Велик',           emoji:'🚲', color:'#00b4d8', sub:'Катаемся', weight:5 },
+  { name:'Велик',           emoji:'🚲', color:'#00b4d8', sub:'Катаемся!', weight:5 },
   { name:'Покушать',        emoji:'🍕', color:'#f4a261', sub:'Вкусно поесть' },
 ];
 
-const canvas = document.getElementById('wheel');
-const ctx = canvas.getContext('2d');
+// ---------- звук (синтез, без файлов) ----------
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+let audio = null, muted = store.get('koleso-muted') === '1';
+const soundBtn = document.getElementById('sound');
+soundBtn.textContent = muted ? '🔇' : '🔊';
+soundBtn.onclick = () => { muted = !muted; store.set('koleso-muted', muted?'1':'0'); soundBtn.textContent = muted?'🔇':'🔊'; };
+function ac() { if (!audio) audio = new (window.AudioContext||window.webkitAudioContext)(); if (audio.state==='suspended') audio.resume(); return audio; }
+function tick() {
+  if (muted) return; const a = ac(), t = a.currentTime;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type='square'; o.frequency.setValueAtTime(1400, t); o.frequency.exponentialRampToValueAtTime(600, t+.03);
+  g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t+.05);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t+.06);
+}
+function fanfare() {
+  if (muted) return; const a = ac(), t0 = a.currentTime;
+  [[523,0],[659,.12],[784,.24],[1047,.36],[1047,.6]].forEach(([f,dt],i) => {
+    const o = a.createOscillator(), g = a.createGain(); const t = t0+dt, len = i===4 ? .6 : .18;
+    o.type='triangle'; o.frequency.value=f;
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.25,t+.02); g.gain.exponentialRampToValueAtTime(.001,t+len);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t+len+.05);
+  });
+}
+
+// ---------- колесо ----------
+const canvas = document.getElementById('wheel'), ctx = canvas.getContext('2d');
+const stage = document.getElementById('stage'), pointer = document.getElementById('pointer'), spinBtn = document.getElementById('spin');
 const N = ITEMS.length, SEG = 2*Math.PI/N, R = 480, CX = 500, CY = 500;
-let angle = 0, spinning = false;
+let angle = 0, spinning = false, lampPhase = 0;
 
 function draw() {
   ctx.clearRect(0,0,1000,1000);
@@ -100,66 +174,110 @@ function draw() {
   ITEMS.forEach((it,i) => {
     const a0 = i*SEG - Math.PI/2, a1 = a0 + SEG;
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,a0,a1); ctx.closePath();
-    ctx.fillStyle = it.color; ctx.fill();
+    const gr = ctx.createRadialGradient(0,0,R*.2,0,0,R);
+    gr.addColorStop(0, it.color); gr.addColorStop(1, shade(it.color,-18));
+    ctx.fillStyle = gr; ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4; ctx.stroke();
 
     ctx.save(); ctx.rotate(a0 + SEG/2);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font = '80px serif'; ctx.fillText(it.emoji, R*0.82, 0);
-    ctx.fillStyle = '#fff'; ctx.font = '900 28px Nunito';
-    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 6;
-    ctx.textAlign = 'left';
+    ctx.fillStyle='#fff'; ctx.font='900 28px Nunito'; ctx.textAlign='left';
+    ctx.shadowColor='rgba(0,0,0,.55)'; ctx.shadowBlur=6;
     const words = it.name.split(' ');
-    words.forEach((w,k) => ctx.fillText(w, R*0.30, (k - (words.length-1)/2) * 30));
+    words.forEach((w,k) => ctx.fillText(w, R*0.30, (k-(words.length-1)/2)*30));
     ctx.restore();
   });
   ctx.restore();
-  // rim dots
+  // лампочки по ободу — бегут, пока крутится
   for (let i=0;i<48;i++){
-    const a = i*2*Math.PI/48;
-    ctx.beginPath(); ctx.arc(CX+Math.cos(a)*(R+8), CY+Math.sin(a)*(R+8), 6, 0, 2*Math.PI);
-    ctx.fillStyle = i%2 ? '#ffd166' : '#fff'; ctx.fill();
+    const a = i*2*Math.PI/48, on = ((i+lampPhase)%2===0);
+    ctx.beginPath(); ctx.arc(CX+Math.cos(a)*(R+8), CY+Math.sin(a)*(R+8), on?7:5, 0, 2*Math.PI);
+    ctx.fillStyle = on ? '#ffd166' : 'rgba(255,255,255,.75)';
+    ctx.shadowColor = on ? '#ffd166' : 'transparent'; ctx.shadowBlur = on ? 14 : 0; ctx.fill();
   }
+  ctx.shadowBlur = 0;
 }
+function shade(hex, pct){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=(n>>8)&255,b=n&255;
+  r=Math.max(0,Math.min(255,r+r*pct/100)); g=Math.max(0,Math.min(255,g+g*pct/100)); b=Math.max(0,Math.min(255,b+b*pct/100));
+  return `rgb(${r|0},${g|0},${b|0})`; }
 
-// Шанс сектора = weight (по умолчанию 1). У «Велика» weight:5 — выпадает чаще всех.
 function pickWeighted() {
-  const total = ITEMS.reduce((a,it) => a + (it.weight || 1), 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < N; i++) { r -= (ITEMS[i].weight || 1); if (r < 0) return i; }
-  return N - 1;
+  const total = ITEMS.reduce((a,it) => a + (it.weight||1), 0);
+  let r = Math.random()*total;
+  for (let i=0;i<N;i++){ r -= (ITEMS[i].weight||1); if (r<0) return i; }
+  return N-1;
 }
+function sectorAtPointer(a){ return ((Math.floor((-a - 0)/SEG) % N) + N) % N; }
 
 function spin() {
   if (spinning) return;
-  spinning = true; document.getElementById('spin').disabled = true;
+  spinning = true; spinBtn.disabled = true; stage.classList.add('spinning'); ac();
   const winner = pickWeighted();
-  // pointer at top => sector center must land at -PI/2 => angle = -(winner*SEG + SEG/2) modulo 2PI
   const target = -(winner*SEG + SEG/2) + (Math.random()-0.5)*SEG*0.7;
   const turns = 6 + Math.floor(Math.random()*3);
   const start = angle % (2*Math.PI);
-  const end = turns*2*Math.PI + ((target - start) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
-  const dur = 5200, t0 = performance.now();
+  const end = turns*2*Math.PI + ((target-start) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  const dur = 5800, t0 = performance.now();
+  let lastSector = Math.floor((start + Math.PI/2*0)/SEG), lastLamp = 0;
   (function frame(now){
     const t = Math.min(1,(now-t0)/dur);
-    const ease = 1 - Math.pow(1-t, 4);
-    angle = start + end*ease; draw();
+    const ease = 1 - Math.pow(1-t, 4.2);
+    angle = start + end*ease;
+    const s = Math.floor(angle/SEG);
+    if (s !== lastSector) { lastSector = s; tick(); pointer.classList.add('tick'); setTimeout(()=>pointer.classList.remove('tick'), 45); }
+    if (now - lastLamp > 90 + 400*t) { lampPhase++; lastLamp = now; }
+    draw();
     if (t < 1) requestAnimationFrame(frame);
-    else { spinning=false; document.getElementById('spin').disabled=false; showResult(winner); }
+    else { spinning=false; spinBtn.disabled=false; stage.classList.remove('spinning'); setTimeout(()=>showResult(winner), 350); }
   })(t0);
 }
 
 function showResult(i) {
   const it = ITEMS[i];
+  document.getElementById('card').style.setProperty('--c', it.color);
   document.getElementById('rEmoji').textContent = it.emoji;
   document.getElementById('rTitle').textContent = it.name;
   document.getElementById('rSub').textContent = it.sub;
   document.getElementById('overlay').classList.add('show');
+  fanfare(); confetti(it.color);
 }
-document.getElementById('spin').onclick = spin;
-document.getElementById('again').onclick = () => document.getElementById('overlay').classList.remove('show');
-document.getElementById('overlay').onclick = e => { if (e.target.id==='overlay') e.target.classList.remove('show'); };
+const overlay = document.getElementById('overlay');
+const hide = () => overlay.classList.remove('show');
+document.getElementById('ok').onclick = hide;
+document.getElementById('again').onclick = () => { hide(); spin(); };
+overlay.onclick = e => { if (e.target===overlay) hide(); };
+spinBtn.onclick = spin; stage.onclick = spin;
+document.addEventListener('keydown', e => { if (e.code==='Space'||e.code==='Enter') { e.preventDefault(); if (overlay.classList.contains('show')) hide(); else spin(); } });
 document.fonts.ready.then(draw); draw();
+
+// ---------- конфетти ----------
+const cc = document.getElementById('confetti'), cctx = cc.getContext('2d');
+function confetti(mainColor){
+  cc.width = innerWidth*devicePixelRatio; cc.height = innerHeight*devicePixelRatio; cctx.scale(devicePixelRatio,devicePixelRatio);
+  const colors = [mainColor,'#ffd166','#fff','#06d6a0','#f72585','#00b4d8'];
+  const P = Array.from({length:180}, () => ({
+    x: innerWidth/2 + (Math.random()-.5)*80, y: innerHeight*0.55,
+    vx:(Math.random()-.5)*18, vy:-(8+Math.random()*14), g:.35+Math.random()*.2,
+    w:8+Math.random()*8, h:5+Math.random()*6, r:Math.random()*Math.PI, vr:(Math.random()-.5)*.3,
+    c: colors[Math.random()*colors.length|0], life: 0
+  }));
+  const t0 = performance.now();
+  (function frame(now){
+    const t = (now-t0)/1000; cctx.clearRect(0,0,innerWidth,innerHeight);
+    P.forEach(p => { p.vy += p.g; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      cctx.save(); cctx.translate(p.x,p.y); cctx.rotate(p.r); cctx.globalAlpha = Math.max(0, 1 - Math.max(0,t-1.8)/1.2);
+      cctx.fillStyle = p.c; cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); cctx.restore(); });
+    if (t < 3) requestAnimationFrame(frame); else cctx.clearRect(0,0,innerWidth,innerHeight);
+  })(t0);
+}
+
+// ---------- звёзды на фоне ----------
+const stars = document.getElementById('stars');
+for (let i=0;i<45;i++){ const s=document.createElement('div'); s.className='star';
+  s.style.left=Math.random()*100+'%'; s.style.top=Math.random()*100+'%';
+  s.style.setProperty('--d',(2+Math.random()*4)+'s'); s.style.setProperty('--delay',(Math.random()*5)+'s');
+  const sz = 2+Math.random()*4; s.style.width=s.style.height=sz+'px'; stars.appendChild(s); }
 </script>
 </body>
 </html>
