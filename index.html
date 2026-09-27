@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Колесо Арсения</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root { --bg1:#1b1f4b; --bg2:#3a1c71; --gold:#ffd166; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; font-family:'Nunito',sans-serif; color:#fff;
+    background: radial-gradient(circle at 50% 30%, var(--bg2), var(--bg1) 70%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    overflow:hidden; user-select:none;
+  }
+  h1 { margin:0; font-weight:900; font-size:clamp(26px,5vw,44px); letter-spacing:.5px;
+       text-shadow:0 4px 18px rgba(0,0,0,.4); }
+  h1 span { color:var(--gold); }
+  .stage { position:relative; width:min(88vw, 78vh); aspect-ratio:1; }
+  canvas { width:100%; height:100%; display:block; border-radius:50%;
+           box-shadow:0 0 0 12px rgba(255,255,255,.08), 0 0 0 22px rgba(255,255,255,.04), 0 30px 60px rgba(0,0,0,.5); }
+  .pointer {
+    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:22px solid transparent; border-right:22px solid transparent;
+    border-top:52px solid var(--gold); filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); z-index:3;
+  }
+  .hub {
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:18%; height:18%; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fff,#ffd166 60%,#e0a800);
+    box-shadow:0 8px 20px rgba(0,0,0,.5), inset 0 -4px 10px rgba(0,0,0,.2);
+    display:flex; align-items:center; justify-content:center; font-size:clamp(28px,6vw,64px); z-index:2;
+  }
+  button.spin {
+    font-family:inherit; font-weight:900; font-size:clamp(20px,3.5vw,30px); padding:16px 54px; border:0; border-radius:999px;
+    color:#3a1c71; background:linear-gradient(180deg,#ffe28a,#ffb703); cursor:pointer;
+    box-shadow:0 10px 0 #c98a00, 0 18px 30px rgba(0,0,0,.4); transition:transform .1s, box-shadow .1s;
+  }
+  button.spin:active { transform:translateY(6px); box-shadow:0 4px 0 #c98a00, 0 8px 16px rgba(0,0,0,.4); }
+  button.spin:disabled { opacity:.6; cursor:default; }
+
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:none; align-items:center; justify-content:center; z-index:10; }
+  .overlay.show { display:flex; }
+  .card {
+    background:#fff; color:#222; border-radius:32px; padding:36px 48px; text-align:center;
+    box-shadow:0 30px 80px rgba(0,0,0,.6); animation:pop .5s cubic-bezier(.2,1.6,.4,1);
+    max-width:90vw;
+  }
+  .card .emoji { font-size:clamp(80px,18vw,150px); line-height:1; }
+  .card .title { font-size:clamp(28px,6vw,48px); font-weight:900; margin-top:8px; }
+  .card .sub { color:#666; font-size:18px; margin-top:6px; }
+  .card button { margin-top:22px; font-family:inherit; font-weight:900; font-size:20px; padding:12px 36px; border:0; border-radius:999px;
+                 background:#3a1c71; color:#fff; cursor:pointer; }
+  @keyframes pop { from { transform:scale(.4); opacity:0 } to { transform:scale(1); opacity:1 } }
+</style>
+</head>
+<body>
+  <h1>🎡 Колесо <span>Арсения</span></h1>
+  <div class="stage">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="1000" height="1000"></canvas>
+    <div class="hub">⭐</div>
+  </div>
+  <button class="spin" id="spin">Крутить!</button>
+
+  <div class="overlay" id="overlay">
+    <div class="card">
+      <div class="emoji" id="rEmoji"></div>
+      <div class="title" id="rTitle"></div>
+      <div class="sub" id="rSub"></div>
+      <button id="again">Ещё раз</button>
+    </div>
+  </div>
+
+<script>
+const ITEMS = [
+  { name:'Математика',      emoji:'🧮', color:'#ff595e', sub:'Считаем и решаем!' },
+  { name:'Русский',         emoji:'✍️', color:'#ff924c', sub:'Пишем красиво' },
+  { name:'Окружающий мир',  emoji:'🌍', color:'#ffca3a', sub:'Узнаём про планету' },
+  { name:'Английский',      emoji:'🇬🇧', color:'#8ac926', sub:'Hello, Arseniy!' },
+  { name:'Флейта',          emoji:'🎶', color:'#52a675', sub:'Играем мелодию' },
+  { name:'Сольфеджио',      emoji:'🎼', color:'#1982c4', sub:'Ноты и ритм' },
+  { name:'Слушание музыки', emoji:'🎧', color:'#4267ac', sub:'Слушаем внимательно' },
+  { name:'Планшет',         emoji:'📱', color:'#6a4c93', sub:'Время на планшет' },
+  { name:'Телевизор',       emoji:'📺', color:'#b5179e', sub:'Смотрим мультик' },
+  { name:'Порисовать',      emoji:'🎨', color:'#f72585', sub:'Творим!' },
+  { name:'Погулять',        emoji:'🌳', color:'#06d6a0', sub:'На улицу!' },
+  { name:'Велик',           emoji:'🚲', color:'#00b4d8', sub:'Катаемся', weight:5 },
+  { name:'Покушать',        emoji:'🍕', color:'#f4a261', sub:'Вкусно поесть' },
+];
+
+const canvas = document.getElementById('wheel');
+const ctx = canvas.getContext('2d');
+const N = ITEMS.length, SEG = 2*Math.PI/N, R = 480, CX = 500, CY = 500;
+let angle = 0, spinning = false;
+
+function draw() {
+  ctx.clearRect(0,0,1000,1000);
+  ctx.save(); ctx.translate(CX,CY); ctx.rotate(angle);
+  ITEMS.forEach((it,i) => {
+    const a0 = i*SEG - Math.PI/2, a1 = a0 + SEG;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R,a0,a1); ctx.closePath();
+    ctx.fillStyle = it.color; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 4; ctx.stroke();
+
+    ctx.save(); ctx.rotate(a0 + SEG/2);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '80px serif'; ctx.fillText(it.emoji, R*0.82, 0);
+    ctx.fillStyle = '#fff'; ctx.font = '900 28px Nunito';
+    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 6;
+    ctx.textAlign = 'left';
+    const words = it.name.split(' ');
+    words.forEach((w,k) => ctx.fillText(w, R*0.30, (k - (words.length-1)/2) * 30));
+    ctx.restore();
+  });
+  ctx.restore();
+  // rim dots
+  for (let i=0;i<48;i++){
+    const a = i*2*Math.PI/48;
+    ctx.beginPath(); ctx.arc(CX+Math.cos(a)*(R+8), CY+Math.sin(a)*(R+8), 6, 0, 2*Math.PI);
+    ctx.fillStyle = i%2 ? '#ffd166' : '#fff'; ctx.fill();
+  }
+}
+
+// Шанс сектора = weight (по умолчанию 1). У «Велика» weight:5 — выпадает чаще всех.
+function pickWeighted() {
+  const total = ITEMS.reduce((a,it) => a + (it.weight || 1), 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < N; i++) { r -= (ITEMS[i].weight || 1); if (r < 0) return i; }
+  return N - 1;
+}
+
+function spin() {
+  if (spinning) return;
+  spinning = true; document.getElementById('spin').disabled = true;
+  const winner = pickWeighted();
+  // pointer at top => sector center must land at -PI/2 => angle = -(winner*SEG + SEG/2) modulo 2PI
+  const target = -(winner*SEG + SEG/2) + (Math.random()-0.5)*SEG*0.7;
+  const turns = 6 + Math.floor(Math.random()*3);
+  const start = angle % (2*Math.PI);
+  const end = turns*2*Math.PI + ((target - start) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  const dur = 5200, t0 = performance.now();
+  (function frame(now){
+    const t = Math.min(1,(now-t0)/dur);
+    const ease = 1 - Math.pow(1-t, 4);
+    angle = start + end*ease; draw();
+    if (t < 1) requestAnimationFrame(frame);
+    else { spinning=false; document.getElementById('spin').disabled=false; showResult(winner); }
+  })(t0);
+}
+
+function showResult(i) {
+  const it = ITEMS[i];
+  document.getElementById('rEmoji').textContent = it.emoji;
+  document.getElementById('rTitle').textContent = it.name;
+  document.getElementById('rSub').textContent = it.sub;
+  document.getElementById('overlay').classList.add('show');
+}
+document.getElementById('spin').onclick = spin;
+document.getElementById('again').onclick = () => document.getElementById('overlay').classList.remove('show');
+document.getElementById('overlay').onclick = e => { if (e.target.id==='overlay') e.target.classList.remove('show'); };
+document.fonts.ready.then(draw); draw();
+</script>
+</body>
+</html>
